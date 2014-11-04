@@ -1,0 +1,159 @@
+#! /bin/sh
+# set -x
+
+init()
+{
+    SCRIPTNAME=${0##*/}
+    VERSION="0.1"
+    ROOTSRC=${ROOTSRC:=~/s}
+    verbose=0			# Verbose output
+    ignoressh=1			# Ignore ssh remotes
+    autopull=0			# Pull the repo on the current branch
+}
+
+usage()
+{
+    exitval=${1:-1}
+    echo "Usage: ${SCRIPTNAME} [-hVvk] [-d <root data directory>]"
+    echo ""
+    echo "  -h		Shows usage.                  "
+    echo "  -V		Print script version and exit."
+    echo "  -v		Be verbose.                   "
+    echo "  -k		Force updating ssh remotes.   "
+    echo "  -p		Pull after updating remotes.  "
+    echo ""
+    echo "  NOTE: If you force updating ssh remotes a password prompt may appear"
+    echo "        and thus not suitable for scripts.                            "
+    echo "        Also note that even though -p is specified, pulls won't occur "
+    echo "        if the repo is not in clean state. -r is specified with pulls "
+    exit $exitval
+}
+
+info()
+{
+    [ ${verbose} -eq 1 ] && echo "$*"
+}
+
+is_ssh()
+{
+    local remote=$1
+
+    # Assume we're on a git repo already
+    url="$(git config --get remote.${remote}.url)"
+    proto=$(echo ${url} | grep '://' | sed -e's,^\(.*://\).*,\1,g')
+
+    if [ "${proto}" == "" -o "${proto}" == "ssh://" ]; then
+	return 1
+    else
+	return 0
+    fi
+
+}
+
+update_remotes()
+{
+    local sshrepo=0
+
+    #
+    # Check for remotes whose url is ssh and
+    # act accordingly
+    #
+    for remote in $(git remote)
+    do
+	is_ssh ${remote}
+	if [ $? -eq 1 -a ${ignoressh} -eq 1 ]; then
+	    info "  Skipping remote ${remote}"
+	else
+	    info "  Updating remote ${remote}"
+	    git remote update ${remote} --prune > /dev/null 2>&1
+	fi
+    done
+}
+
+auto_gc()
+{
+    git gc --auto > /dev/null 2>&1
+}
+
+auto_pull()
+{
+    local branch=""
+
+    if [ ${autopull} -ne 0 ]; then
+	# Check if dir is clean
+	for l in $(git status --porcelain)
+	do
+	    if [ ! -z "${l}" ]; then
+		info "  NOT pulling from a dirty repo"
+		return
+	    fi
+	done
+
+	#
+	# Attempt to find out which branch the repo is in
+	# and from which remote it pulls.
+	# Given that the branch is clean it will
+	branch=$(git symbolic-ref -q --short HEAD)
+	remote=$(git branch -vv | fgrep " ${branch}" | sed 's/.*\[\([^]]*\)\/.*/\1/g')
+	is_ssh ${remote}
+	if [ $? -eq 1 -a $ignoressh -eq 1 ]; then
+	    return
+	fi
+	info "  Pulling ${remote}/${branch} with -r (rebase) option"
+	git pull -r > /dev/null 2>&1
+
+	[ $? -ne 0 ] && info "  Pull failed on ${remote}/${branch}"
+    fi
+}
+
+# ----------------------------------------------------
+
+# Setup some variables
+init
+
+# Command line arguments parsing
+while getopts hVvkd:p op
+do
+    case $op in
+	h)
+	    usage
+	    ;;
+        V)
+            echo ${SCRIPTNAME} ${VERSION}
+	    exit 0
+            ;;
+	v)
+	    verbose=1
+	    ;;
+	k)
+	    ignoressh=0
+	    ;;
+	d)
+	    if [ ! -d "${OPTARG}" ]; then
+		info Directory ${OPTARG} or cannot be read
+		exit 255
+	    fi
+	    ROOTSRC=${OPTARG}
+	    ;;
+	p)
+	    autopull=1
+	    ;;
+        *)
+            usage
+            ;;
+    esac
+done
+
+for dir in ${ROOTSRC}/*
+do
+	if [ ! -d ${dir}/.git ]; then
+	    info Skipping non-GIT repo ${dir}
+	    continue
+	else
+	    info Updating ${dir}
+	    cd ${dir} || ( echo Failed to cd to ${dir}; continue )
+	    update_remotes
+	    auto_gc
+	    auto_pull
+	fi
+done
