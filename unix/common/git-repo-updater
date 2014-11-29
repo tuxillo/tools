@@ -34,7 +34,7 @@ info()
     [ ${verbose} -eq 1 ] && echo "$*"
 }
 
-is_ssh()
+get_proto()
 {
     local remote=$1
 
@@ -42,26 +42,31 @@ is_ssh()
     url="$(git config --get remote.${remote}.url)"
     proto=$(echo ${url} | grep '://' | sed -e's,^\(.*://\).*,\1,g')
 
-    if [ -z "${proto}" -o "${proto}" = "ssh://" ]; then
-	return 1
-    else
-	return 0
-    fi
-
+    case ${proto} in
+	"https://"|"http://")
+	    return 1
+	    ;;
+	"ssh://")
+	    return 2
+	    ;;
+	"git://")
+	    return 0
+	    ;;
+	*)
+	    return 3;
+    esac
 }
 
 update_remotes()
 {
-    local sshrepo=0
-
     #
     # Check for remotes whose url is ssh and
     # act accordingly
     #
     for remote in $(git remote)
     do
-	is_ssh ${remote}
-	if [ $? -eq 1 -a ${ignoressh} -eq 1 ]; then
+	get_proto ${remote}
+	if [ $? -eq 2 -a ${ignoressh} -eq 1 ]; then
 	    info "  Skipping remote ${remote}"
 	else
 	    info "  Updating remote ${remote}"
@@ -95,8 +100,8 @@ auto_pull()
 	# Given that the branch is clean it will
 	branch=$(git symbolic-ref -q --short HEAD)
 	remote=$(git branch -vv | fgrep " ${branch}" | sed 's/.*\[\([^]]*\)\/.*/\1/g')
-	is_ssh ${remote}
-	if [ $? -eq 1 -a $ignoressh -eq 1 ]; then
+	get_proto ${remote}
+	if [ $? -eq 2 -a $ignoressh -eq 1 ]; then
 	    return
 	fi
 	info "  Pulling ${remote}/${branch} with -r (rebase) option"
