@@ -42,7 +42,7 @@ is_ssh()
     url="$(git config --get remote.${remote}.url)"
     proto=$(echo ${url} | grep '://' | sed -e's,^\(.*://\).*,\1,g')
 
-    if [ "${proto}" == "" -o "${proto}" == "ssh://" ]; then
+    if [ -z "${proto}" -o "${proto}" = "ssh://" ]; then
 	return 1
     else
 	return 0
