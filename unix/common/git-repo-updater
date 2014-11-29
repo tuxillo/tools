@@ -4,7 +4,7 @@
 init()
 {
     SCRIPTNAME=${0##*/}
-    VERSION="0.1"
+    VERSION="0.2"
     ROOTSRC=${ROOTSRC:=~/s}
     verbose=0			# Verbose output
     ignoressh=1			# Ignore ssh remotes
@@ -14,16 +14,17 @@ init()
 usage()
 {
     exitval=${1:-1}
-    echo "Usage: ${SCRIPTNAME} [-hVvk] [-d <root data directory>]"
+    echo "Usage: ${SCRIPTNAME} [-hVvkp] [-d <repositories directory>]"
     echo ""
     echo "  -h		Shows usage.                  "
     echo "  -V		Print script version and exit."
     echo "  -v		Be verbose.                   "
     echo "  -k		Force updating ssh remotes.   "
-    echo "  -p		Pull after updating remotes.  "
+    echo "  -p		Pull after updating remotes (WARNING: it rebases!)"
+    echo "  -d		Specify the repositories' root directory."
     echo ""
     echo "  NOTE: If you force updating ssh remotes a password prompt may appear"
-    echo "        and thus not suitable for scripts.                            "
+    echo "        which may not be suitable for scripting.                      "
     echo "        Also note that even though -p is specified, pulls won't occur "
     echo "        if the repo is not in clean state. -r is specified with pulls "
     exit $exitval
