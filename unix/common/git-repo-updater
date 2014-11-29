@@ -151,7 +151,7 @@ done
 
 for dir in ${ROOTSRC}/*
 do
-	if [ ! -d ${dir}/.git ]; then
+	if  ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
 	    info Skipping non-GIT repo ${dir}
 	    continue
 	else
