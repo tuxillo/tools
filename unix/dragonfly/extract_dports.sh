@@ -259,6 +259,7 @@ do
     case $op in
 	c)
 	    configfile=$OPTARG
+	    ;;
 	v)
 	    verbose=1
 	    ;;
