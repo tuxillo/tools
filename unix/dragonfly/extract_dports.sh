@@ -144,7 +144,7 @@ setup()
 #    local timestamp=$(date +'%Y%m%d%H%M%S')
 
     # Load configuration file
-    [ -f "${configfile}" ] && source ${configfile}
+    [ -f "${configfile}" ] && . ${configfile}
 
     # Directories and flag setup
     wrkdir=${wrkdir:-$HOME/temp/dports}
@@ -180,6 +180,44 @@ cleanup()
     # Post-extraction cleanup
 }
 
+postprocess_pkg()
+{
+   local dir=$1
+
+   #
+    # Remove all files that are deemed useless. Also
+    # remove .gz files *temporarily* because there is a
+    # bug either in openjdk on in the gzip parser that
+    # causes a crash in the indexing process.
+    runcmd find ${dir} \( \
+	   -iname "*.gz" -o \
+	   -iname "*.log" -o \
+	   -iname "*.bak" -o \
+	   -iname "*.orig" -o \
+	   -iname "*.orig" -o \
+	   -iname "*.rej" \) -delete
+
+    #
+    # Directories not accessible must be to allow browsing
+    #
+    runcmd find ${dir} -type d \( \
+	   -perm 0700 -o \
+	   -perm 0750 \) \
+	   -exec chmod 755 {} \;
+
+    #
+    # Many files are left either with 0400 or 0600 perms
+    # and that has to be changed so browsing through the
+    # files is possible.
+    runcmd find ${dir} -type f \( \
+	   -perm 0400 -o \
+	   -perm 0600 -o \
+	   -perm 0640 -o \
+	   -perm 0660 \) \
+	   -exec chmod 644 {} \;
+
+}
+
 #
 # process_category category
 # 	Do the actual tasks required for dports extraction/patching
@@ -206,33 +244,32 @@ process_category()
 	    #	4. Move our WRKSRC to the tgtdir
 	    #	5. Remove all *.log *.bak *.orig *.rej
 	    #	6. Dispose "work" directory
-	    runcmd cd ${dir}
-	    if [ ${rmprev} -gt 0 ]; then
-		runcmd make ${mkenvvars} rmconfig
-		runcmd make ${mkenvvars} clean
-	    fi
-	    runcmd make ${mkenvvars} patch
 
 	    # Deal with work and WRKSRC
+	    runcmd cd ${dir}
 	    src=$(make ${mkenvvars} -VWRKSRC)
 	    tgt=${tgtdir}/${category}/${dir##*/}
 	    work_dir=$(make ${mkenvvars} -VWRKDIR)
 
-	    # Remove all *.log *.bak *.orig *.rej
-	    runcmd find ${src} \( \
-		   -iname "*.log" -o \
-		   -iname "*.bak" -o \
-		   -iname "*.orig" -o \
-		   -iname "*.orig" -o \
-		   -iname "*.rej" \) -delete
-	    # XXX Due a problem with openjdk remove .gz files
-	    runcmd find ${src} -iname "*.gz" -delete
+	    if [ ! -d  ${tgt}/${src##*/} ]; then
+		if [ ${rmprev} -gt 0 ]; then
+		    runcmd make ${mkenvvars} rmconfig
+		    runcmd make ${mkenvvars} clean
+		fi
+		runcmd make ${mkenvvars} patch
 
-	    [ ! -d  ${tgt}/${src##*/} ] && runcmd mv ${src} ${tgt}
+		# Post processing
+		postprocess_pkg ${src}
+
+		runcmd mv ${src} ${tgt}
+	    else
+		info "Skipping existing ${tgt}/${src##*/}" >> ${logfile}
+	    fi
+
 	    rm -fr ${work_dir}
 
 	    # Next port
-	    count=$(( count  + 1))
+	    count=$(( count  + 1 ))
 	fi
     done
 
@@ -248,7 +285,7 @@ usage()
 {
     exitval=${1:-1}
     echo "Usage: ${0##*/} [-hrkv] [-w wrkdir] [-d distdir]" \
-    "[-t  tgtdir] [-l logdir] [-p catprefix]"
+    "[-t tgtdir] [-l logdir] [-p catprefix] [-c cfgfile]"
     exit $exitval
 }
 
@@ -257,11 +294,11 @@ usage()
 while getopts hrw:d:t:p:l:kc:v op
 do
     case $op in
-	c)
-	    configfile=$OPTARG
-	    ;;
 	v)
 	    verbose=1
+	    ;;
+	c)
+	    configfile=$OPTARG
 	    ;;
 	r)
 	    rmprev=1
