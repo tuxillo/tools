@@ -152,7 +152,7 @@ done
 
 for dir in ${ROOTSRC}/*
 do
-	cd ${dir} || ( echo Failed to cd to ${dir}; continue )
+	cd ${dir} 2>/dev/null || ( info Failed to cd to ${dir}; continue )
 	if  ! git rev-parse --git-dir > /dev/null 2>&1; then
 	    info Skipping non-GIT repo ${dir}
 	    continue
