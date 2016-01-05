@@ -173,7 +173,10 @@ setup()
     touch ${logfile}
 
     # Make specific environment variables
-    mkenvvars="WRKDIRPREFIX=${tgtdir} DISTDIR=${distdir} BATCH=yes INSTALL_AS_USER=yes"
+    mkenvvars="WRKDIRPREFIX=${tgtdir} DISTDIR=${distdir} BATCH=yes"
+
+    # Enforce LANG C to avoid sed problems
+    export LANG=C
 }
 
 #
