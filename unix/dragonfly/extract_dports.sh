@@ -49,6 +49,8 @@ maxwidth=16
 npkg=0
 rmprev=0
 verbose=0
+success=0
+failed=0
 categories="vietnamese hebrew hungarian arabic x11-servers x11-drivers ukrainian x11-clocks benchmarks russian portuguese german converters accessibility news ftp ports-mgmt polish shells archivers x11-fm astro chinese x11-fonts comms net-p2p dns french finance biology irc korean net-im cad science x11-wm emulators japanese multimedia editors x11 x11-toolkits net-mgmt deskutils audio databases math textproc mail net misc sysutils graphics games x11-themes security print lang devel java www"
 
 
@@ -247,21 +249,27 @@ process_category()
 	    #	6. Dispose "work" directory
 
 	    # Deal with work and WRKSRC
-	    runcmd cd ${dir}
+	    runcmd cd ${dir} || err 1 "cd to ${dir}"
 	    src=$(make ${mkenvvars} -VWRKSRC)
 	    tgt=${tgtdir}/${category}/${dir##*/}
 	    work_dir=$(make ${mkenvvars} -VWRKDIR)
 
 	    if [ ! -d  ${src} ]; then
 		# XXX This doesn't keep old package versions in place
-		runcmd make ${mkenvvars} rmconfig
-		runcmd make ${mkenvvars} clean
-		runcmd make ${mkenvvars} patch
+		runcmd make ${mkenvvars} rmconfig && \
+		    runcmd make ${mkenvvars} clean && \
+		    runcmd make ${mkenvvars} patch
 
-		# Post processing
-		postprocess_pkg ${src}
+		if [ $? -ne 0 ]; then
+		    runcmd make ${mkenvvars} clean
+		    failed=$(( failed + 1 ))
+		else
+		    success=$(( success + 1 ))
 
-		runcmd mv ${src} ${tgt}
+		    # Post processing
+		    postprocess_pkg ${src}
+		    runcmd mv ${src} ${tgt}
+		fi
 	    else
 		info "Skipping existing ${src}" >> ${logfile}
 	    fi
@@ -275,6 +283,13 @@ process_category()
     if [ ! -z "${catprefix}" ]; then
 	runcmd mv ${tgtdir}/${category} ${tgtdir}/${catprefix}${category}
     fi
+}
+
+#
+# STATS -
+stats()
+{
+    printf "Finished. Failed=%d\tSuccess=%d\n" ${failed} ${success}
 }
 
 #
@@ -339,3 +354,6 @@ done
 
 # Cleanup
 cleanup
+
+# Print stats
+stats
