@@ -45,7 +45,6 @@ logfile=
 tgtdir=
 distdir=
 mkenvvars=
-permiterr=0
 maxwidth=16
 npkg=0
 rmprev=0
@@ -85,19 +84,14 @@ runcmd()
 {
     local logf=${logfile}
     local cmd=$*
-    local runerr=0
 
     # If we don't have a logfile yet, discard the output
     [ ! -f ${logfile} ] && logf="/dev/null"
 
     [ ${verbose} -gt 0 ] && echo "RUN: " ${cmd} >> ${logf}
     ${cmd} >> ${logf} 2>&1
-    runerr=$?
-    if [ ${runerr} -ne 0 -a ${permiterr} -eq 0 ]; then
-	err 1 "Command failed: " ${cmd}
-    fi
 
-    return ${runerr}
+    return $?
 }
 
 #
@@ -295,7 +289,7 @@ usage()
 
 # ---------------------------------
 # Handle options
-while getopts hrw:d:t:p:l:kc:v op
+while getopts hrw:d:t:p:l:c:v op
 do
     case $op in
 	v)
@@ -318,9 +312,6 @@ do
 	    ;;
 	t)
 	    tgtdir=$OPTARG
-	    ;;
-	k)
-	    permiterr=1
 	    ;;
 	l)
 	    logdir=$OPTARG
