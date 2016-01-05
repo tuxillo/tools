@@ -162,7 +162,8 @@ setup()
     info "Creating directory for the extraction: "${wrkdir}
     for dir in ${wrkdir} ${tgtdir} ${logdir} ${distdir}
     do
-	[ ! -d ${dir} ] && runcmd mkdir ${mkdir_flags} ${dir}
+	[ ! -d ${dir} ] && ( runcmd mkdir ${mkdir_flags} ${dir} || \
+		err 255 "Unable to create ${dir}" )
     done
 
     # Make sure logfile exists
@@ -349,8 +350,11 @@ setup
 for category in ${categories}
 do
     info "Working on category" ${category}
-    process_category ${category}
+    process_category ${category} &
 done
+
+# Wait for all the children to finish
+wait
 
 # Cleanup
 cleanup
