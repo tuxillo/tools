@@ -266,8 +266,6 @@ process_category()
 		info "Skipping existing ${tgt}/${src##*/}" >> ${logfile}
 	    fi
 
-	    rm -fr ${work_dir}
-
 	    # Next port
 	    count=$(( count  + 1 ))
 	fi
