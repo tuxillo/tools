@@ -85,15 +85,19 @@ runcmd()
 {
     local logf=${logfile}
     local cmd=$*
+    local runerr=0
 
-    # If we don't have a logfile yet, dump the output
+    # If we don't have a logfile yet, discard the output
     [ ! -f ${logfile} ] && logf="/dev/null"
 
-    echo "Run: " ${cmd} >> ${logf}
+    [ ${verbose} -gt 0 ] && echo "RUN: " ${cmd} >> ${logf}
     ${cmd} >> ${logf} 2>&1
-    if [ $? -ne 0 -a ${permiterr} -eq 0 ]; then
+    runerr=$?
+    if [ ${runerr} -ne 0 -a ${permiterr} -eq 0 ]; then
 	err 1 "Command failed: " ${cmd}
     fi
+
+    return ${runerr}
 }
 
 #
