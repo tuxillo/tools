@@ -51,6 +51,10 @@ rmprev=0
 verbose=0
 success=0
 failed=0
+skipped=0
+starttime=""
+
+# All categories
 categories="vietnamese hebrew hungarian arabic x11-servers x11-drivers ukrainian x11-clocks benchmarks russian portuguese german converters accessibility news ftp ports-mgmt polish shells archivers x11-fm astro chinese x11-fonts comms net-p2p dns french finance biology irc korean net-im cad science x11-wm emulators japanese multimedia editors x11 x11-toolkits net-mgmt deskutils audio databases math textproc mail net misc sysutils graphics games x11-themes security print lang devel java www"
 
 
@@ -174,6 +178,9 @@ setup()
 
     # Enforce LANG C to avoid sed problems
     export LANG=C
+
+    # Start time
+    starttime=`date`
 }
 
 #
@@ -273,6 +280,7 @@ process_category()
 		fi
 	    else
 		info "Skipping existing ${src}" >> ${logfile}
+		skipped=$(( skipped + 1 ))
 	    fi
 
 	    # Next port
@@ -290,7 +298,13 @@ process_category()
 # STATS -
 stats()
 {
-    printf "Finished. Failed=%d\tSuccess=%d\n" ${failed} ${success}
+    local total=$(( success + failed + skipped ))
+
+    echo "--------------------------------------------------------------"
+    echo " >>> Started on ${starttime}"
+    echo " >>> Ended on   `date`"
+    echo " >>> Total=${total} OK=${success} FAIL=${failed} SKIP=${skipped}"
+    echo "--------------------------------------------------------------"
 }
 
 #
@@ -350,11 +364,8 @@ setup
 for category in ${categories}
 do
     info "Working on category" ${category}
-    process_category ${category} &
+    process_category ${category}
 done
-
-# Wait for all the children to finish
-wait
 
 # Cleanup
 cleanup
