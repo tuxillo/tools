@@ -258,11 +258,10 @@ process_category()
 	    tgt=${tgtdir}/${category}/${dir##*/}
 	    work_dir=$(make ${mkenvvars} -VWRKDIR)
 
-	    if [ ! -d  ${tgt}/${src##*/} ]; then
-		if [ ${rmprev} -gt 0 ]; then
-		    runcmd make ${mkenvvars} rmconfig
-		    runcmd make ${mkenvvars} clean
-		fi
+	    if [ ! -d  ${src} ]; then
+		# XXX This doesn't keep old package versions in place
+		runcmd make ${mkenvvars} rmconfig
+		runcmd make ${mkenvvars} clean
 		runcmd make ${mkenvvars} patch
 
 		# Post processing
@@ -270,7 +269,7 @@ process_category()
 
 		runcmd mv ${src} ${tgt}
 	    else
-		info "Skipping existing ${tgt}/${src##*/}" >> ${logfile}
+		info "Skipping existing ${src}" >> ${logfile}
 	    fi
 
 	    # Next port
