@@ -276,7 +276,6 @@ process_category()
 
 		    # Post processing
 		    postprocess_pkg ${src}
-		    runcmd mv ${src} ${tgt}
 		fi
 	    else
 		info "Skipping existing ${src}" >> ${logfile}
