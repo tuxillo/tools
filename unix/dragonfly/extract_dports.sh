@@ -269,7 +269,6 @@ process_category()
 		    runcmd make ${mkenvvars} patch
 
 		if [ $? -ne 0 ]; then
-		    runcmd make ${mkenvvars} clean
 		    failed=$(( failed + 1 ))
 		else
 		    success=$(( success + 1 ))
