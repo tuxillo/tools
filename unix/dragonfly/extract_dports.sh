@@ -270,6 +270,7 @@ process_category()
 
 		if [ $? -ne 0 ]; then
 		    failed=$(( failed + 1 ))
+		    runcmd make ${mkenvvars} clean -DNOCLEANDEPENDS
 		else
 		    success=$(( success + 1 ))
 
