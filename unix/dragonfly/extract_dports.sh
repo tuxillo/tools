@@ -265,7 +265,7 @@ process_category()
 	    if [ ! -d  ${src} ]; then
 		# XXX This doesn't keep old package versions in place
 		runcmd make ${mkenvvars} rmconfig && \
-		    runcmd make ${mkenvvars} clean && \
+		    runcmd make ${mkenvvars} clean -DNOCLEANDEPENDS && \
 		    runcmd make ${mkenvvars} patch
 
 		if [ $? -ne 0 ]; then
