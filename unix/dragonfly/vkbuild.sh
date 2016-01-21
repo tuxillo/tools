@@ -1,4 +1,7 @@
 #! /bin/sh
+#
+# This script is work in progress
+#
 #set -x
 
 KCONF=${KERNCONF:=VKERNEL64}
