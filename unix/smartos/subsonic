@@ -3,33 +3,34 @@
 # Init script for openvpn (SMF).
 #
 . /lib/svc/share/smf_include.sh
-. ${SUBSONIC_HOME}/subsonic.conf
 
-METHOD=$1
+CONFIG=$1
 PATH="/opt/local/sbin:/opt/local/bin:/opt/local/gnu/bin:/usr/bin:/usr/sbin:${JAVA_HOME}/bin"
 SCRIPTNAME=$(basename $0)
 INSTANCE=$(echo $SMF_FMRI | sed s_.*:__)
 
-case $METHOD in
-start)
-        java -Xmx${SUBSONIC_MAX_MEMORY} \
-          -Dsubsonic.home=${SUBSONIC_HOME} \
-          -Dsubsonic.host=${SUBSONIC_HOST} \
-          -Dsubsonic.port=${SUBSONIC_PORT} \
-          -Dsubsonic.httpsPort=${SUBSONIC_HTTPS_PORT} \
-          -Dsubsonic.contextPath=${SUBSONIC_CONTEXT_PATH} \
-          -Dsubsonic.defaultMusicFolder=${SUBSONIC_DEFAULT_MUSIC_FOLDER} \
-          -Dsubsonic.defaultPodcastFolder=${SUBSONIC_DEFAULT_PODCAST_FOLDER} \
-          -Dsubsonic.defaultPlaylistFolder=${SUBSONIC_DEFAULT_PLAYLIST_FOLDER} \
-          -Djava.awt.headless=true \
-          -verbose:gc \
-          -jar ${SUBSONIC_HOME}/subsonic-booter-jar-with-dependencies.jar > ${SUBSONIC_LOG} 2>&1 &
-        ;;
-*)
-        echo "usage : "
-        echo "$SCRIPTNAME { start } "
-        echo ""
-        exit $SMF_EXIT_ERR_CONFIG
-esac
+# No config no start
+[ ! -f ${CONFIG} ] && exit ${SMF_EXIT_ERR_CONFIG}
 
-exit $SMF_EXIT_OK
+# Load preferences
+. ${CONFIG}
+
+java -Xmx${SUBSONIC_MAX_MEMORY} \
+  -Dsubsonic.home=${SUBSONIC_HOME} \
+  -Dsubsonic.host=${SUBSONIC_HOST} \
+  -Dsubsonic.port=${SUBSONIC_PORT} \
+  -Dsubsonic.httpsPort=${SUBSONIC_HTTPS_PORT} \
+  -Dsubsonic.contextPath=${SUBSONIC_CONTEXT_PATH} \
+  -Dsubsonic.defaultMusicFolder=${SUBSONIC_DEFAULT_MUSIC_FOLDER} \
+  -Dsubsonic.defaultPodcastFolder=${SUBSONIC_DEFAULT_PODCAST_FOLDER} \
+  -Dsubsonic.defaultPlaylistFolder=${SUBSONIC_DEFAULT_PLAYLIST_FOLDER} \
+  -Djava.awt.headless=true \
+  -verbose:gc \
+  -jar ${SUBSONIC_HOME}/subsonic-booter-jar-with-dependencies.jar > ${SUBSONIC_LOG} 2>&1 &
+
+if [ $? -neq 0 ]; then
+        code=${SMF_EXIT_ERR_FATAL}
+else
+        code=${SMF_EXIT_OK}
+
+exit ${code}
