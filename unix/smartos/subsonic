@@ -3,7 +3,7 @@
 # Init script for openvpn (SMF).
 #
 . /lib/svc/share/smf_include.sh
-. /opt/subsonic/subsonic.conf
+. ${SUBSONIC_HOME}/subsonic.conf
 
 METHOD=$1
 PATH="/opt/local/sbin:/opt/local/bin:/opt/local/gnu/bin:/usr/bin:/usr/sbin:${JAVA_HOME}/bin"
@@ -23,7 +23,7 @@ start)
           -Dsubsonic.defaultPlaylistFolder=${SUBSONIC_DEFAULT_PLAYLIST_FOLDER} \
           -Djava.awt.headless=true \
           -verbose:gc \
-          -jar /opt/subsonic/subsonic-booter-jar-with-dependencies.jar > ${SUBSONIC_LOG} 2>&1 &
+          -jar ${SUBSONIC_HOME}/subsonic-booter-jar-with-dependencies.jar > ${SUBSONIC_LOG} 2>&1 &
         ;;
 *)
         echo "usage : "
