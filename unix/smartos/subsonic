@@ -1,0 +1,35 @@
+#!/sbin/sh
+#
+# Init script for openvpn (SMF).
+#
+. /lib/svc/share/smf_include.sh
+. /opt/subsonic/subsonic.conf
+
+METHOD=$1
+PATH="/opt/local/sbin:/opt/local/bin:/opt/local/gnu/bin:/usr/bin:/usr/sbin:${JAVA_HOME}/bin"
+SCRIPTNAME=$(basename $0)
+INSTANCE=$(echo $SMF_FMRI | sed s_.*:__)
+
+case $METHOD in
+start)
+        java -Xmx${SUBSONIC_MAX_MEMORY} \
+          -Dsubsonic.home=${SUBSONIC_HOME} \
+          -Dsubsonic.host=${SUBSONIC_HOST} \
+          -Dsubsonic.port=${SUBSONIC_PORT} \
+          -Dsubsonic.httpsPort=${SUBSONIC_HTTPS_PORT} \
+          -Dsubsonic.contextPath=${SUBSONIC_CONTEXT_PATH} \
+          -Dsubsonic.defaultMusicFolder=${SUBSONIC_DEFAULT_MUSIC_FOLDER} \
+          -Dsubsonic.defaultPodcastFolder=${SUBSONIC_DEFAULT_PODCAST_FOLDER} \
+          -Dsubsonic.defaultPlaylistFolder=${SUBSONIC_DEFAULT_PLAYLIST_FOLDER} \
+          -Djava.awt.headless=true \
+          -verbose:gc \
+          -jar /opt/subsonic/subsonic-booter-jar-with-dependencies.jar > ${SUBSONIC_LOG} 2>&1 &
+        ;;
+*)
+        echo "usage : "
+        echo "$SCRIPTNAME { start } "
+        echo ""
+        exit $SMF_EXIT_ERR_CONFIG
+esac
+
+exit $SMF_EXIT_OK
