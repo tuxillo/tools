@@ -4,33 +4,75 @@
 #
 . /lib/svc/share/smf_include.sh
 
-CONFIG=$1
-PATH="/opt/local/sbin:/opt/local/bin:/opt/local/gnu/bin:/usr/bin:/usr/sbin:${JAVA_HOME}/bin"
+METHOD=$1
 SCRIPTNAME=$(basename $0)
 INSTANCE=$(echo $SMF_FMRI | sed s_.*:__)
+CONFIG=$2
 
-# No config no start
-[ ! -f ${CONFIG} ] && exit ${SMF_EXIT_ERR_CONFIG}
+# Try to load values from the config but use
+# defaults in case there is none
+CONFIG=${CONFIG:-/var/subsonic/subsonic.conf}
+[ -f ${CONFIG} ] && . ${CONFIG}
 
-# Load preferences
-. ${CONFIG}
+SUBSONIC_HOME=${SUBSONIC_HOME:-/var/subsonic}
+SUBSONIC_HOST=${SUBSONIC_HOST:-0.0.0.0}
+SUBSONIC_PORT=${SUBSONIC_PORT:-4040}
+SUBSONIC_HTTPS_PORT=${SUBSONIC_HTTPS_PORT:-0}
+SUBSONIC_CONTEXT_PATH=${SUBSONIC_CONTEXT_PATH:-/}
+SUBSONIC_MAX_MEMORY=${SUBSONIC_MAX_MEMORY:-256m}
+SUBSONIC_DEFAULT_MUSIC_FOLDER=${SUBSONIC_DEFAULT_MUSIC_FOLDER:-/var/music}
+SUBSONIC_DEFAULT_PODCAST_FOLDER=${SUBSONIC_DEFAULT_PODCAST_FOLDER:-/var/music/Podcast}
+SUBSONIC_DEFAULT_PLAYLIST_FOLDER=${SUBSONIC_DEFAULT_PLAYLIST_FOLDER:-/var/playlists}
+SUBSONIC_PIDFILE=${SUBSONIC_PIDFILE:-/var/subsonic/subsonic.pid}
+SUBSONIC_LOG=${SUBSONIC_LOG:-/var/subsonic/subsonic_sh.log}
 
-java -Xmx${SUBSONIC_MAX_MEMORY} \
-  -Dsubsonic.home=${SUBSONIC_HOME} \
-  -Dsubsonic.host=${SUBSONIC_HOST} \
-  -Dsubsonic.port=${SUBSONIC_PORT} \
-  -Dsubsonic.httpsPort=${SUBSONIC_HTTPS_PORT} \
-  -Dsubsonic.contextPath=${SUBSONIC_CONTEXT_PATH} \
-  -Dsubsonic.defaultMusicFolder=${SUBSONIC_DEFAULT_MUSIC_FOLDER} \
-  -Dsubsonic.defaultPodcastFolder=${SUBSONIC_DEFAULT_PODCAST_FOLDER} \
-  -Dsubsonic.defaultPlaylistFolder=${SUBSONIC_DEFAULT_PLAYLIST_FOLDER} \
-  -Djava.awt.headless=true \
-  -verbose:gc \
-  -jar ${SUBSONIC_HOME}/subsonic-booter-jar-with-dependencies.jar > ${SUBSONIC_LOG} 2>&1 &
+# JAVA_HOME is crucial for starting
+if [ "${METHOD}" == "start" -a -z "${JAVA_HOME}" ]; then
+    echo "No JAVA_HOME variable set in your config"
+    exit ${SMF_EXIT_ERR_CONFIG}
+fi
 
-if [ $? -neq 0 ]; then
-        code=${SMF_EXIT_ERR_FATAL}
-else
-        code=${SMF_EXIT_OK}
+# Set a reasonable path including java bin
+PATH="/opt/local/sbin:/opt/local/bin:/opt/local/gnu/bin:/usr/bin:/usr/sbin:${JAVA_HOME}/bin"
 
-exit ${code}
+case "${METHOD}" in
+start)
+        # See if there is a PID file and if so check
+        # whether it is still running
+        if [ -f ${SUBSONIC_PIDFILE} ]; then
+                pid=$(cat ${SUBSONIC_PIDFILE})
+
+                # Already running
+                ps -p ${pid} > /dev/null && exit 1
+        fi
+
+        java -Xmx${SUBSONIC_MAX_MEMORY} \
+          -Dsubsonic.home=${SUBSONIC_HOME} \
+          -Dsubsonic.host=${SUBSONIC_HOST} \
+          -Dsubsonic.port=${SUBSONIC_PORT} \
+          -Dsubsonic.httpsPort=${SUBSONIC_HTTPS_PORT} \
+          -Dsubsonic.contextPath=${SUBSONIC_CONTEXT_PATH} \
+          -Dsubsonic.defaultMusicFolder=${SUBSONIC_DEFAULT_MUSIC_FOLDER} \
+          -Dsubsonic.defaultPodcastFolder=${SUBSONIC_DEFAULT_PODCAST_FOLDER} \
+          -Dsubsonic.defaultPlaylistFolder=${SUBSONIC_DEFAULT_PLAYLIST_FOLDER} \
+          -Djava.awt.headless=true \
+          -verbose:gc \
+          -jar ${SUBSONIC_HOME}/subsonic-booter-jar-with-dependencies.jar >> ${SUBSONIC_LOG} 2>&1 &
+
+        echo $! > ${SUBSONIC_PIDFILE}
+        ;;
+stop)
+        # Retrieve PID from pidfile
+        [ ! -f ${SUBSONIC_PIDFILE} -o -z ${SUBSONIC_PIDFILE} ] && exit ${SMF_EXIT_ERR_CONFIG}
+
+        kill $(cat ${SUBSONIC_PIDFILE})
+        rm ${SUBSONIC_PIDFILE}
+        ;;
+*)
+        echo "Usage: ${SCRIPTNAME} { stop | start } config_file"
+        exit ${SMF_EXIT_ERR_CONFIG}
+        ;;
+esac
+
+exit ${SMF_EXIT_OK}
+

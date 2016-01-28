@@ -15,8 +15,8 @@
         <method_context>
             <method_credential user="subsonic" group="subsonic"/>
         </method_context>
-        <exec_method type="method" name="start" exec="/var/subsonic/subsonic %{config}" timeout_seconds="60"/>
-        <exec_method type="method" name="stop" exec=":kill" timeout_seconds="60"/>
+        <exec_method type="method" name="start" exec="/var/subsonic/subsonic start %{config_file}" timeout_seconds="60"/>
+        <exec_method type="method" name="stop" exec="/var/subsonic/subsonic stop" timeout_seconds="60"/>
         <property_group name="startd" type="framework">
             <propval name="duration" type="astring" value="contract"/>
             <propval name="ignore_error" type="astring" value="core,signal"/>
