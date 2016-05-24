@@ -14,6 +14,10 @@ unsetopt beep
 bindkey -e
 # End of lines configured by zsh-newuser-install
 
+# For vkernel building scripts
+export  REPOSITORY=/build/home/antonioh/s/dragonfly
+export  VKDIR=/build/home/antonioh/vk
+
 
 # From http://stackoverflow.com/questions/1128496/to-get-a-prompt-which-indicates-git-branch-in-zsh (Christopher)
 setopt prompt_subst
