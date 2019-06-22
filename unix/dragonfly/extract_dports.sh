@@ -107,7 +107,7 @@ countpkg()
 {
     npkg=0
 
-    # Iterate allowed categories and count all directories
+    # Iterate allowed categories, count all directories
     # and while here specify maximum width
     for dir in ${dports_dir}/${category}/*
     do
@@ -202,31 +202,46 @@ postprocess_pkg()
     # causes a crash in the indexing process.
     runcmd find ${dir} \( \
 	   -iname "*.gz" -o \
+	   -iname "*.zip" -o \
+	   -iname "*.bz2" -o \
 	   -iname "*.log" -o \
 	   -iname "*.bak" -o \
 	   -iname "*.orig" -o \
 	   -iname "*.orig" -o \
+	   -iname "*.png" -o \
+	   -iname "*.html" -o \
+	   -iname "*.txt" -o \
+	   -iname "*.gif" -o \
+	   -iname "*.svg" -o \
+	   -iname "*.jpg" -o \
+	   -iname "*.js" -o \
+	   -iname "*.ttf" -o \
+	   -iname "*.wav" -o \
+	   -iname "*.xpm" -o \
+	   -iname "*.ogg" -o \
 	   -iname "*.rej" \) -delete
 
     #
     # Directories not accessible must be to allow browsing
     #
-    runcmd find ${dir} -type d \( \
-	   -perm 0700 -o \
-	   -perm 0750 \) \
-	   -exec chmod 755 {} \;
+    runcmd find ${dir} -type d -exec chmod 755 {} \;
 
     #
     # Many files are left either with 0400 or 0600 perms
     # and that has to be changed so browsing through the
     # files is possible.
-    runcmd find ${dir} -type f \( \
-	   -perm 0400 -o \
-	   -perm 0600 -o \
-	   -perm 0640 -o \
-	   -perm 0660 \) \
-	   -exec chmod 644 {} \;
+    runcmd find ${dir} -type f -exec chmod 644 {} \;
 
+    #
+    # Remove CVS directories, normally the CVS data for those
+    # source trees is incomplete or non-working and leaves the
+    # indexing process stalled.
+    # Also remove .git, .hg and .svn repositories.
+    runcmd find ${dir} -type d -a \( \
+	   -name "CVS" -o \
+	   -name ".git" -o \
+	   -name ".hg" -o \
+	   -name ".svn" \) -exec rm -fr {} \;
 }
 
 #
@@ -312,17 +327,20 @@ usage()
 {
     exitval=${1:-1}
     echo "Usage: ${0##*/} [-hrkv] [-w wrkdir] [-d distdir]" \
-    "[-t tgtdir] [-l logdir] [-p catprefix] [-c cfgfile]"
+    "[-t tgtdir] [-l logdir] [-p catprefix] [-c cfgfile] [-s dports_dir]"
     exit $exitval
 }
 
 # ---------------------------------
 # Handle options
-while getopts hrw:d:t:p:l:c:v op
+while getopts hs:rw:d:t:p:l:c:v op
 do
     case $op in
 	v)
 	    verbose=1
+	    ;;
+	s)
+	    dports_dir=$OPTARG
 	    ;;
 	c)
 	    configfile=$OPTARG
